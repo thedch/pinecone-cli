@@ -2,6 +2,7 @@
 # encoding: utf-8
 # pylint: disable=line-too-long,too-many-arguments,invalid-name,no-member,missing-function-docstring,missing-module-docstring
 
+import logging
 import hashlib
 import itertools
 import os
@@ -95,8 +96,9 @@ def _pinecone_init(apikey, environment, indexname=''):
         try:
             # index = pinecone.Index(indexname)
             index = pinecone.GRPCIndex(indexname)
-        except:
-            sys.exit("Unable to connect.  Caught exception:")
+        except Exception:
+            logging.exception("Unable to connect.  Caught exception:")
+            sys.exit()
         else:
             return index
 
@@ -164,19 +166,19 @@ def version():
 @click.argument('pinecone_index_name')
 @click.argument('query_vector')
 def query(pinecone_index_name, apikey, query_vector, region, topk, include_values, include_meta, expand_meta, num_clusters, perplexity, tsne_random_state, namespace, show_tsne, meta_filter, print_table):
-    """ Queries Pinecone index named <PINECONE_INDEX_NAME> with the given <QUERY_VECTOR> and optional namespace. 
+    """ Queries Pinecone index named <PINECONE_INDEX_NAME> with the given <QUERY_VECTOR> and optional namespace.
 
         \b
-        Example: 
+        Example:
         % ./pinecli.py query lpfactset  "[0,0]"
 
         \b
         Example 2:
         % ./pinecli.py query  upsertfile  "[1.2, 1.0, 3.0]" --print-table --include-meta=true  --filter="{'genre':'drama'}"
 
-        \b 
+        \b
         Example 3 [Query randomly]:
-        % ./pinecli.py query lpfactset random 
+        % ./pinecli.py query lpfactset random
 
         For filter syntax see: https://docs.pinecone.io/docs/metadata-filtering
     """
@@ -248,9 +250,9 @@ def show_tsne_plot(pinecone_index_name, results, num_clusters, perplexity, rando
 @click.option('--namespace', help='Namespace within the index to search.')
 @click.argument('pinecone_index_name')
 def fetch(pinecone_index_name, apikey, region, vector_ids, namespace, pretty):
-    """ Fetch queries from Pinecone by vector_ids 
+    """ Fetch queries from Pinecone by vector_ids
 
-        \b    
+        \b
         Example:
         % ./pinecli.py fetch lpfactset --vector_ids="05b4509ee655aacb10bfbb6ba212c65c"
     """
@@ -271,13 +273,13 @@ def fetch(pinecone_index_name, apikey, region, vector_ids, namespace, pretty):
 @click.argument('pinecone_index_name')
 @click.argument('vector_literal')
 def upsert(pinecone_index_name, apikey, region, vector_literal, namespace, debug):
-    """ 
+    """
     Upserts vectors into the index <PINECONE_INDEX_NAME> by using the <VECTOR_LITERAL> which is a string representation of a list of tuples.
     Note the literal is quoted.
 
     \b
     Example:
-    % ./pinecli.py upsert upsertfile "[('vec1', [0.1, 0.2, 0.3], {'genre': 'drama'}), ('vec2', [0.2, 0.3, 0.4], {'genre': 'action'}),]" --debug 
+    % ./pinecli.py upsert upsertfile "[('vec1', [0.1, 0.2, 0.3], {'genre': 'drama'}), ('vec2', [0.2, 0.3, 0.4], {'genre': 'action'}),]" --debug
     """
     index = _pinecone_init(apikey, region, pinecone_index_name)
     if debug:
@@ -379,12 +381,12 @@ def upsert_webpage(pinecone_index_name, apikey, namespace, openaiapikey, metadat
 @click.option('--print-table', help='Display the output as a pretty table.', is_flag=True, show_default=True, default=False)
 @click.argument('pinecone_index_name')
 def head(pinecone_index_name, apikey, region, topk, random_dims, namespace, include_meta, expand_meta, include_values, print_table):
-    """ Shows a preview of vectors in the <PINECONE_INDEX_NAME> with optional numrows (default 10) 
+    """ Shows a preview of vectors in the <PINECONE_INDEX_NAME> with optional numrows (default 10)
 
     \b
         Example 1:
 
-        % ./pinecli.py head lpfactset --include-meta=true --include-values=true 
+        % ./pinecli.py head lpfactset --include-meta=true --include-values=true
         {'matches': [{'id': 'ae23d7574c19cea0b3479c93858a3ee3',
               'metadata': {'content': 'Oded K. R&D Group Lead          Why '
                                       'Pinecone Fast, fresh, and filtered '
@@ -399,7 +401,7 @@ def head(pinecone_index_name, apikey, region, topk, random_dims, namespace, incl
         Example 2: (printing results with a table)
 
         % tim@yoda pinecone-cli % ./pinecli.py head pageuploadtest --include-values=True  --include-meta=True --namespace=test  --print-table --topk=3
-                                                                         🌲 pageuploadtest ns=(test) Index Results                                                                         
+                                                                         🌲 pageuploadtest ns=(test) Index Results
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
         ┃                               ID ┃ NS   ┃ Values                         ┃                                                                                                 Meta ┃ Score ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
@@ -580,7 +582,7 @@ def create_collection(apikey, region, collection_name, source_index):
 @click.option('--region', help='Pinecone Index Region', show_default=True, default=default_region)
 @click.argument('pinecone_index_name', required=True)
 def describe_index_stats(apikey, region, pinecone_index_name):
-    """ Show the stats for index with name <PINECONE_INDEX_NAME>. Note that if the index has several namespaces, those will be broken out. 
+    """ Show the stats for index with name <PINECONE_INDEX_NAME>. Note that if the index has several namespaces, those will be broken out.
 
     \b
     Example:
@@ -666,4 +668,3 @@ cli.add_command(version)
 
 if __name__ == "__main__":
     cli()
-    
