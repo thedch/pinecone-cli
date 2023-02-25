@@ -321,8 +321,8 @@ def update(pinecone_index_name, apikey, region, id, vector_literal, metadata, na
 @click.option("--metadata_content_key", help="The key used to store the page content in the metadata with.", show_default=True, default="content")
 @click.option("--window", help='Number of sentences to combine in one embedding (vector).', show_default=True, default=10)
 @click.option("--stride", help='Number of sentences to stride over to create overlap', show_default=True, default=4)
-@click.argument('url')
-@click.argument('pinecone_index_name')
+@click.option('--url')
+@click.option('--pinecone_index_name')
 def upsert_webpage(pinecone_index_name, apikey, namespace, openaiapikey, metadata_content_key, region, url, window, stride, debug):
     """ Upserts vectors into the index <PINECONE_INDEX_NAME> using the openai embeddings api.  You will need your api key for openai and specify it using --openapikey """
     pinecone_index = _pinecone_init(apikey, region, pinecone_index_name)
@@ -338,7 +338,7 @@ def upsert_webpage(pinecone_index_name, apikey, namespace, openaiapikey, metadat
     new_data = []
 
     text = ''
-    for i in tqdm(range(0, len(sentences), stride)):
+    for i in tqdm(range(0, len(sentences), stride)): # TODO: Use trange
         i_end = min(len(sentences)-1, i+window)
         if sentences[i] == sentences[i_end]:
             continue
