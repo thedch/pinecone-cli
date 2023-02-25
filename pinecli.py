@@ -7,11 +7,10 @@ import hashlib
 import itertools
 import os
 import sys
-import urllib.request
 
 from ast import literal_eval
 from time import sleep
-from urllib.request import Request
+import requests
 
 import click
 import pandas as pd
@@ -327,8 +326,9 @@ def upsert_webpage(pinecone_index_name, apikey, namespace, openaiapikey, metadat
     """ Upserts vectors into the index <PINECONE_INDEX_NAME> using the openai embeddings api.  You will need your api key for openai and specify it using --openapikey """
     pinecone_index = _pinecone_init(apikey, region, pinecone_index_name)
 
-    req = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-    html = urllib.request.urlopen(req).read()
+    # req = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    # html = urllib.request.urlopen(req).read()
+    html = requests.get(url).text
     html = text_from_html(html)
     nltk.download('punkt')
     tokenizer = nltk.data.load('tokenizers/punkt/english.pickle')
