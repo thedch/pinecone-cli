@@ -1,7 +1,11 @@
+import os
+
 import plotly.express as px
 import gradio as gr
 import pandas as pd
 from collections import defaultdict
+
+import pinecone
 
 """
 (Pdb) pp data.describe()
@@ -24,6 +28,16 @@ def get_data(num_names_per_category=2):
 
 
 def make_plot(plot_type):
+    del plot_type
+
+    pinecone.init(
+        api_key=os.getenv('PINECONE_API_KEY'),
+        environment=os.getenv('PINECONE_ENVIRONMENT'),
+    )
+    index = pinecone.Index("vc-content-oracle-big")
+    print(index)
+    import pdb; pdb.set_trace()
+
     data = get_data()
     names = []
     parents = []
