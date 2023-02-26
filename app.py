@@ -5,18 +5,15 @@ import gradio as gr
 import pandas as pd
 from collections import defaultdict
 
-from dotenv import load_dotenv
+from time import sleep
+import openai
 
+import logging
+from dotenv import load_dotenv
 import pinecone
 
-"""
-(Pdb) pp data.describe()
-       Category  Name                   URL    $ Raised     Investors Founded                 HQ            Focus
-count       540   540                   540         366           382     511                509              540
-unique       17   540                   540         203           366      19                217              365
-top        Text  Seek  https://www.seek.ai/  $2,000,000  Y Combinator    2021  San Francisco, CA  Writing/Editing
-freq        132     1                     1          18             8     106                 75               12
-"""
+default_region = 'us-west1-gcp'
+openai_embed_model = "text-embedding-ada-002"
 
 def get_data(num_names_per_category=2, num_categories=3):
 
@@ -26,6 +23,24 @@ def get_data(num_names_per_category=2, num_categories=3):
     data = query_pinecone(categories, num_categories, num_names_per_category)
 
     return data
+
+def get_openai_embedding(apikey, data):
+    """ Fetch an embedding w/ given data """
+    openai.api_key = apikey
+    try:
+        res = openai.Embedding.create(input=data, engine=openai_embed_model)
+    except:
+        done = False
+        while not done:
+            sleep(5)
+            try:
+                res = openai.Embedding.create(
+                    input=data, engine=openai_embed_model)
+                print('retrying')
+                done = True
+            except Exception as e:
+                logging.exception(e)
+    return res
 
 def query_pinecone(categories, n_categories=3, top_k=4):
     load_dotenv()
@@ -40,10 +55,10 @@ def query_pinecone(categories, n_categories=3, top_k=4):
 
 
     # loop thru all the categories
-    for categories in categories[:n_categories]:
+    for category in categories[:n_categories]:
 
         #get vector for each category
-        vector = [0.0] * 1536
+        vector = get_openai_embedding(os.getenv('OPENAI_API_KEY'), category)['data'][0]['embedding']
 
         res = index.query(
             vector=vector,
