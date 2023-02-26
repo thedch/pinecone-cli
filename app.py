@@ -40,7 +40,7 @@ def query_pinecone(categories, n_categories=3, top_k=4):
 
 
     # loop thru all the categories
-    for category in categories:
+    for categories in categories[:n_categories]:
 
         #get vector for each category
         vector = [0.0] * 1536
@@ -63,27 +63,27 @@ def query_pinecone(categories, n_categories=3, top_k=4):
 
     """
     returns { 'matches': [{
-        'id': 'A',
-        'metadata': {
-            'Organization Name',
-            'Organization Name URL',
-            'Last Funding Amount',
-            'Last Funding Amount Currency',
-            'Last Funding Amount Currency (in USD)',
-            'Website',
-            'Total Funding Amount',
-            'Total Funding Amount Currency',
-            'Total Funding Amount Currency (in USD)',
-            'Last Funding Date',
-            'Founded Date',
-            'Founded Date Precision',
-            'Last Funding Type',
-            'Number of Employees',
-            'Full Description',
-            'Top 5 Investors'
-        },
-        'score': 0.01,
-        'values':[]
+        'id': 'A', 
+        'metadata': { 
+            'Organization Name': '', 
+            'Organization Name URL': '', 
+            'Last Funding Amount': '',
+            'Last Funding Amount Currency': '', 
+            'Last Funding Amount Currency (in USD)': '',
+            'Website': '', 
+            'Total Funding Amount': '', 
+            'Total Funding Amount Currency': '',
+            'Total Funding Amount Currency (in USD)': '', 
+            'Last Funding Date': '',
+            'Founded Date': '', 
+            'Founded Date Precision': '', 
+            'Last Funding Type': '',
+            'Number of Employees': '', 
+            'Full Description': '', 
+            'Top 5 Investors': '',
+        }, 
+        'score': 0.01, 
+        'values':[] 
         }]}
     """
 
