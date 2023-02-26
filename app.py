@@ -17,7 +17,7 @@ openai_embed_model = "text-embedding-ada-002"
 
 def get_data(num_names_per_category=2, num_categories=3):
 
-    categories = ['Text,', 'Bio', 'Audio', 'Legal', 'Chatbot/Conversational AI', 'Summarization', 'MLOps/Platform', 'Code', 'Avatars', 'Image', 'Semantic Search', 'Game', 'Video', 'Data', 'Sentiment Analysis']
+    categories = ['Text', 'Bio', 'Audio', 'Legal', 'Chatbot/Conversational AI', 'Summarization', 'MLOps/Platform', 'Code', 'Avatars', 'Image', 'Semantic Search', 'Game', 'Video', 'Data', 'Sentiment Analysis']
     num_categories = min(num_categories, len((categories)))
 
     data = query_pinecone(categories, num_categories, num_names_per_category)
@@ -53,6 +53,7 @@ def query_pinecone(categories, n_categories=3, top_k=4):
 
     out = defaultdict(list)
 
+    companies = set()
 
     # loop thru all the categories
     for category in categories[:n_categories]:
@@ -72,8 +73,21 @@ def query_pinecone(categories, n_categories=3, top_k=4):
                 print('no Organization Name')
                 continue
 
-            company_link = '<a href="' + match['metadata']['Website'] + '" style="cursor: pointer" target="_blank" rel="noopener noreferrer">' + match['metadata']['Organization Name'] + '</a>'
-            out[category].append(company_link)
+            #check if the match is already in the dictionary 
+            company_link = '<a href="' + match['metadata']['Website'] + '" style="cursor: pointer; color:white; font-color:white " target="_blank" rel="noopener noreferrer">' + match['metadata']['Organization Name'] + '</a>'
+
+            print(out[category], company_link)
+
+            contains = False
+            if match['metadata']['Organization Name'] in companies:
+                contains = True
+
+            if not contains:
+                out[category].append(company_link)
+            else:
+                out[category].append(None)
+            
+            companies.add(match['metadata']['Organization Name'])
 
     return out
 
@@ -126,10 +140,18 @@ def make_plot(category, num_categories, num_names_per_category):
     )
 
     fig.update_traces(root_color="lightgrey")
+    fig.update_traces(pathbar_textfont_color="white")
     fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
     return fig
 
 with gr.Blocks() as demo:
+
+    #make a title
+    title = gr.HTML('<h1 style="text-align: center; color: white; font-size: 50px; font-family: Helvetica">ChatGVC</h1>')
+
+    #make a subtitle
+    subtitle = gr.HTML('<h2 style="text-align: center; color: white; font-size: 20px; font-family: Helvetica">Auto-Generated VC Market Maps</h2>')
+
     category = gr.Textbox(label='Market Category')
     n_subcategories = gr.Number(label="Number of Subcategories")
     n_companies = gr.Number(label="Max Number of Companies per Subcategory")
