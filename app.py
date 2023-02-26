@@ -49,15 +49,16 @@ def query_pinecone(categories, n_categories=3, top_k=4):
             vector=vector,
             top_k=top_k,
             include_metadata=True,
-            include_values=True,
+            include_values=False,
         )
 
         for match in res['matches']:
-            if 'company' not in match['metadata']:
+            if 'Organization Name' not in match['metadata'] or 'Website' not in match['metadata']:
+                print('no Organization Name')
                 continue
-            # link = '<a href="' + match['metadata']['url'] + '" style="cursor: pointer" target="_blank" rel="noopener noreferrer">' + match['metadata']['company'] + '</a>'
-            # out[category].append(link)
-            out[category].append(match['metadata']['company'])
+
+            company_link = '<a href="' + match['metadata']['Website'] + '" style="cursor: pointer" target="_blank" rel="noopener noreferrer">' + match['metadata']['Organization Name'] + '</a>'
+            out[category].append(company_link)
 
     return out
 
