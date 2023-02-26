@@ -53,6 +53,8 @@ def query_pinecone(categories, n_categories=3, top_k=4):
         )
 
         for match in res['matches']:
+            if 'company' not in match['metadata']:
+                continue
             # link = '<a href="' + match['metadata']['url'] + '" style="cursor: pointer" target="_blank" rel="noopener noreferrer">' + match['metadata']['company'] + '</a>'
             # out[category].append(link)
             out[category].append(match['metadata']['company'])
