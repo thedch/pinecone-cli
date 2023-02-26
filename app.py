@@ -5,6 +5,8 @@ import gradio as gr
 import pandas as pd
 from collections import defaultdict
 
+from dotenv import load_dotenv
+
 import pinecone
 
 """
@@ -17,37 +19,81 @@ freq        132     1                     1          18             8     106   
 """
 
 def get_data(num_names_per_category=2, num_categories=3):
-    # The following code reads the CSV and returns it the way I want it
 
-    num_categories = min(num_categories, 14)
+    categories = ['Text,', 'Bio', 'Audio', 'Legal', 'Chatbot/Conversational AI', 'Summarization', 'MLOps/Platform', 'Code', 'Avatars', 'Image', 'Semantic Search', 'Game', 'Video', 'Data', 'Sentiment Analysis']
+    num_categories = min(num_categories, len((categories)))
 
-    data = pd.read_csv('./market_map.csv')
-    out = defaultdict(list)
-    for category in data['Category'].value_counts().index[:num_categories]:
-        random_names = data[data['Category'] == category].sample(num_names_per_category)
-        out[category] = random_names['Name'].values.tolist()
+    data = query_pinecone(categories, num_categories, num_names_per_category)
+    
+    #ensure data is rectangular
 
     return out
 
-
-def make_plot(category, num_categories, num_names_per_category):
-
-    num_categories = int(num_categories)
-    num_names_per_category = int(num_names_per_category)
-
-    del plot_type
+def query_pinecone(categories, n_categories=3, top_k=4):
+    load_dotenv()
 
     pinecone.init(
         api_key=os.getenv('PINECONE_API_KEY'),
         environment=os.getenv('PINECONE_ENVIRONMENT'),
     )
     index = pinecone.Index("vc-content-oracle-big")
-    print(index)
-    import pdb; pdb.set_trace()
+
+    out = defaultdict(list)
+
+
+    # loop thru all the categories
+    for category in categories:
+
+        #get vector for each category
+        vector = [0.0] * 1536
+
+        res = index.query(
+            vector=vector,
+            top_k=top_k,
+            include_metadata=True,
+            include_values=True,
+        )
+
+        for match in res['matches']:
+            out[category].append(match['metadata'])
+
+    return out
+
+    """
+    returns { 'matches': [{
+        'id': 'A', 
+        'metadata': { 
+            'Organization Name', 
+            'Organization Name URL', 
+            'Last Funding Amount',
+            'Last Funding Amount Currency', 
+            'Last Funding Amount Currency (in USD)',
+            'Website', 
+            'Total Funding Amount', 
+            'Total Funding Amount Currency',
+            'Total Funding Amount Currency (in USD)', 
+            'Last Funding Date',
+            'Founded Date', 
+            'Founded Date Precision', 
+            'Last Funding Type',
+            'Number of Employees', 
+            'Full Description', 
+            'Top 5 Investors'
+        }, 
+        'score': 0.01, 
+        'values':[] 
+        }]}
+    """
+
+def make_plot(category, num_categories, num_names_per_category):
+
+    num_categories = int(num_categories)
+    num_names_per_category = int(num_names_per_category)
 
     data = get_data(num_names_per_category, num_categories)
     names = []
     parents = []
+
     for category, names_list in data.items():
         names.extend(names_list)
         parents.extend([category] * len(names_list))
@@ -60,15 +106,15 @@ def make_plot(category, num_categories, num_names_per_category):
         names=names,
         parents=parents,
     )
+
     fig.update_traces(root_color="lightgrey")
     fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
-    print('Done')
     return fig
 
 with gr.Blocks() as demo:
     category = gr.Textbox(label='Market Category')
     n_subcategories = gr.Number(label="Number of Subcategories")
-    n_companies = gr.Number(label="Number of Companies per Subcategory")
+    n_companies = gr.Number(label="Max Number of Companies per Subcategory")
     button = gr.Button("Generate")
     plot = gr.Plot(label="Plot")
     button.click(make_plot, inputs=[category, n_subcategories, n_companies], outputs=[plot])
