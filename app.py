@@ -5,8 +5,11 @@ import gradio as gr
 import pandas as pd
 from collections import defaultdict
 
+
 from time import sleep
 import openai
+
+import json 
 
 import logging
 from dotenv import load_dotenv
@@ -137,12 +140,84 @@ def make_plot(category, num_categories, num_names_per_category):
     fig = px.treemap(
         names=names,
         parents=parents,
+
     )
 
     fig.update_traces(root_color="lightgrey")
     fig.update_traces(pathbar_textfont_color="white")
     fig.update_layout(margin = dict(t=50, l=25, r=25, b=25))
     return fig
+
+def add_text(state, text):
+
+    #call open ai with the context from the state passed in 
+
+    load_dotenv()
+
+    pinecone.init(
+        api_key=os.getenv('PINECONE_API_KEY'),
+        environment=os.getenv('PINECONE_ENVIRONMENT'),
+    )
+    index = pinecone.Index("vc-content-oracle-big")
+
+    vector = get_openai_embedding(os.getenv('OPENAI_API_KEY'), text)['data'][0]['embedding']
+
+    #make call to the vector store 
+
+    res = index.query(
+            vector=vector,
+            top_k=3,
+            include_metadata=True,
+            include_values=False,
+        )
+
+    context = 'You are Andressen Horowitz, a Venture Capitalist. You know everything about startup investment, particularly in Generative AI. Everytime you are asked a question respond faithfully and consistently. Answer the question based on the context below \n\n'
+
+    # 'Organization Name': '', 
+    #         'Organization Name URL': '', 
+    #         'Last Funding Amount': '',
+    #         'Last Funding Amount Currency': '', 
+    #         'Last Funding Amount Currency (in USD)': '',
+    #         'Website': '', 
+    #         'Total Funding Amount': '', 
+    #         'Total Funding Amount Currency': '',
+    #         'Total Funding Amount Currency (in USD)': '', 
+    #         'Last Funding Date': '',
+    #         'Founded Date': '', 
+    #         'Founded Date Precision': '', 
+    #         'Last Funding Type': '',
+    #         'Number of Employees': '', 
+    #         'Full Description': '', 
+    #         'Top 5 Investors': '',
+
+    for match in res['matches'][:1]:
+        context += (
+            'Context\n: Name: ' + 
+            str(match['metadata'].get('Organization Name', '')) + 
+            'Funding: ' + 
+            str(match['metadata'].get('Total Funding Amount', '')) + 
+            'Founding Date: ' + 
+            str(match['metadata'].get('Founded Date', '')) + 
+            'Number of Employees: ' + 
+            str(match['metadata'].get('Number of Employees', '')) + 
+            'Description: ' + 
+            str(match['metadata'].get('Full Description', '')) + 
+            'Investors: ' + 
+            str(match['metadata'].get('Top 5 Investors', ''))
+        )
+
+    context += 'Question: ' + text + '\nAnswer:'
+
+    response = openai.Completion.create(
+        model="text-davinci-003",
+        prompt=context,
+        max_tokens=200,
+        temperature=0,
+    )
+
+    state = state + [(text, response['choices'][0]['text'])]
+
+    return state, state
 
 with gr.Blocks() as demo:
 
@@ -159,4 +234,15 @@ with gr.Blocks() as demo:
     plot = gr.Plot(label="Plot")
     button.click(make_plot, inputs=[category, n_subcategories, n_companies], outputs=[plot])
     # demo.load(make_plot, inputs=[button, category], outputs=[plot])
+
+    chatbot = gr.Chatbot(elem_id="chatbot")
+    state = gr.State([])
+    
+    with gr.Row():
+        with gr.Column(scale=0.85):
+            txt = gr.Textbox(show_label=False, placeholder="Enter text and press enter, or upload an image").style(container=False)
+            
+    txt.submit(add_text, [state, txt], [state, chatbot])
+    txt.submit(lambda :"", None, txt)
+
     demo.launch()
