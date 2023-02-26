@@ -24,10 +24,8 @@ def get_data(num_names_per_category=2, num_categories=3):
     num_categories = min(num_categories, len((categories)))
 
     data = query_pinecone(categories, num_categories, num_names_per_category)
-    
-    #ensure data is rectangular
 
-    return out
+    return data
 
 def query_pinecone(categories, n_categories=3, top_k=4):
     load_dotenv()
@@ -55,33 +53,35 @@ def query_pinecone(categories, n_categories=3, top_k=4):
         )
 
         for match in res['matches']:
-            out[category].append(match['metadata'])
+            # link = '<a href="' + match['metadata']['url'] + '" style="cursor: pointer" target="_blank" rel="noopener noreferrer">' + match['metadata']['company'] + '</a>'
+            # out[category].append(link)
+            out[category].append(match['metadata']['company'])
 
     return out
 
     """
     returns { 'matches': [{
-        'id': 'A', 
-        'metadata': { 
-            'Organization Name', 
-            'Organization Name URL', 
+        'id': 'A',
+        'metadata': {
+            'Organization Name',
+            'Organization Name URL',
             'Last Funding Amount',
-            'Last Funding Amount Currency', 
+            'Last Funding Amount Currency',
             'Last Funding Amount Currency (in USD)',
-            'Website', 
-            'Total Funding Amount', 
+            'Website',
+            'Total Funding Amount',
             'Total Funding Amount Currency',
-            'Total Funding Amount Currency (in USD)', 
+            'Total Funding Amount Currency (in USD)',
             'Last Funding Date',
-            'Founded Date', 
-            'Founded Date Precision', 
+            'Founded Date',
+            'Founded Date Precision',
             'Last Funding Type',
-            'Number of Employees', 
-            'Full Description', 
+            'Number of Employees',
+            'Full Description',
             'Top 5 Investors'
-        }, 
-        'score': 0.01, 
-        'values':[] 
+        },
+        'score': 0.01,
+        'values':[]
         }]}
     """
 
